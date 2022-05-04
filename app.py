@@ -3,8 +3,11 @@ from flask_cors import cross_origin
 import requests
 from bs4 import BeautifulSoup as bs
 from urllib.request import urlopen as uReq
+from connection import *
 
 app = Flask(__name__)
+app.config["TESTING"] = True
+app.config["SECRET_KEY"] = 'ed93a0fd1f3fca263d3c915fa9bc4ccc28c4c30b0e814a3e01972fcad1f09a51'
 
 
 @app.route('/', methods=['GET'])  # route to display the home page
@@ -34,10 +37,16 @@ def index():
             print(prod_html)
             commentboxes = prod_html.find_all('div', {'class': "_16PBlm"})
 
-            filename = searchString + ".csv"
-            fw = open(filename, "w")
-            headers = "Product, Customer Name, Rating, Heading, Comment \n"
-            fw.write(headers)
+            qry = """
+                CREATE TABLE {searchString} (Product VARCHAR(255), 
+                Customer_Name VARCHAR(255),
+                Rating int, 
+                Heading VARCHAR(255), 
+                Comment VARCHAR(255))
+            """
+            qry = qry.format(searchString=searchString)
+            cursor.execute(qry)
+            log.info(f"{searchString} table created in database")
             reviews = []
             for commentbox in commentboxes:
                 try:
@@ -63,7 +72,14 @@ def index():
                     # custComment.encode(encoding='utf-8')
                     custComment = comtag[0].div.text
                 except Exception as e:
-                    print("Exception while creating dictionary: ", e)
+                    log.error("Exception while creating dictionary: ", e)
+
+                sql = """INSERT INTO {searchString} (Product, Customer_Name, Rating, Heading, Comment) VALUES (%s, 
+                %s, %d, %s, %s) 
+                """
+                val = (searchString, name, rating, commentHead, custComment)
+                cursor.execute(sql, val)
+                log.info("data stored in database")
 
                 mydict = {"Product": searchString, "Name": name, "Rating": rating, "CommentHead": commentHead,
                           "Comment": custComment}
@@ -71,7 +87,7 @@ def index():
             return render_template('results.html', reviews=reviews[0:(len(reviews) - 1)])
 
         except Exception as e:
-            print('The Exception message is: ', e)
+            log.error('The Exception message is: ', e)
             return 'something is wrong'
     # return render_template('results.html')
 
