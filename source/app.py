@@ -13,7 +13,7 @@ app.config["SECRET_KEY"] = 'ed93a0fd1f3fca263d3c915fa9bc4ccc28c4c30b0e814a3e0197
 @app.route('/', methods=['GET'])  # route to display the home page
 @cross_origin()
 def homePage():
-    return render_template("index.html")
+    return render_template("ReviewFlask/templates/index.html")
 
 
 @app.route('/review', methods=['POST', 'GET'])  # route to show the review comments in a web UI
@@ -85,7 +85,7 @@ def index():
                 mydict = {"Product": searchString, "Name": name, "Rating": rating, "CommentHead": commentHead,
                           "Comment": custComment}
                 reviews.append(mydict)
-            return render_template('results.html', reviews=reviews[0:(len(reviews) - 1)])
+            return render_template('../templates/results.html', reviews=reviews[0:(len(reviews) - 1)])
 
         except Exception as e:
             log.error('The Exception message is: ', e)
@@ -93,7 +93,7 @@ def index():
     # return render_template('results.html')
 
     else:
-        return render_template('index.html')
+        return render_template('./templates/index.html')
 
 
 if __name__ == "__main__":
