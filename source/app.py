@@ -79,7 +79,8 @@ def index():
                 """
                 val = (searchString, name, rating, commentHead, custComment)
                 cursor.execute(sql, val)
-                log.info("data stored in database")
+                my_database.commit()
+                log.info("data stored in database :", cursor.lastrowid)
 
                 mydict = {"Product": searchString, "Name": name, "Rating": rating, "CommentHead": commentHead,
                           "Comment": custComment}
