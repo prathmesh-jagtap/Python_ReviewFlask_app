@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup as bs
 from urllib.request import urlopen as uReq
 from connection import *
+from logger import *
 
 app = Flask(__name__)
 app.config["TESTING"] = True
@@ -13,7 +14,7 @@ app.config["SECRET_KEY"] = 'ed93a0fd1f3fca263d3c915fa9bc4ccc28c4c30b0e814a3e0197
 @app.route('/', methods=['GET'])  # route to display the home page
 @cross_origin()
 def homePage():
-    return render_template("ReviewFlask/templates/index.html")
+    return render_template("index.html")
 
 
 @app.route('/review', methods=['POST', 'GET'])  # route to show the review comments in a web UI
@@ -38,6 +39,7 @@ def index():
             commentboxes = prod_html.find_all('div', {'class': "_16PBlm"})
 
             qry = """
+                use product_reviews;
                 CREATE TABLE {searchString} (Product VARCHAR(255), 
                 Customer_Name VARCHAR(255),
                 Rating int, 
@@ -72,28 +74,29 @@ def index():
                     # custComment.encode(encoding='utf-8')
                     custComment = comtag[0].div.text
                 except Exception as e:
-                    log.error("Exception while creating dictionary: ", e)
-
-                sql = """INSERT INTO {searchString} (Product, Customer_Name, Rating, Heading, Comment) VALUES (%s, 
-                %s, %d, %s, %s) 
-                """
-                val = (searchString, name, rating, commentHead, custComment)
-                cursor.execute(sql, val)
-                my_database.commit()
-                log.info("data stored in database :", cursor.lastrowid)
+                    log.error("Exception while creating dictionary: %s", e)
 
                 mydict = {"Product": searchString, "Name": name, "Rating": rating, "CommentHead": commentHead,
                           "Comment": custComment}
                 reviews.append(mydict)
-            return render_template('../templates/results.html', reviews=reviews[0:(len(reviews) - 1)])
+                reviews = reviews[0:(len(reviews) - 1)]
+
+                for i in reviews:
+                    sql = """INSERT INTO {searchString} (Product, Customer_Name, Rating, Heading, Comment) VALUES (%s, 
+                                                    %s, %d, %s, %s) 
+                                                    """
+                    val = (i["Product"], i["Name"], i["Rating"], i["CommentHead"], i["Comment"])
+                    cursor.execute(sql, val)
+                log.info("data stored in database")
+            return render_template('results.html', reviews=reviews)
 
         except Exception as e:
-            log.error('The Exception message is: ', e)
+            log.error(e)
             return 'something is wrong'
     # return render_template('results.html')
 
     else:
-        return render_template('./templates/index.html')
+        return render_template('index.html')
 
 
 if __name__ == "__main__":
